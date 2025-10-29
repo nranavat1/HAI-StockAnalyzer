@@ -111,7 +111,7 @@ async def analyze(request: Request, num: int):
     if not stock_data:
         return HTMLResponse("Error loading stock data", status_code=500)
     
-    return templates.TemplateResponse("analyze.html", {
+    return templates.TemplateResponse("index.html", {
         "request": request,
         "stock_number": num,
         "stock_data": stock_data,
