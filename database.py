@@ -42,7 +42,7 @@ def init_db():
                 id SERIAL PRIMARY KEY,
                 session_id VARCHAR(50) NOT NULL,
                 ticker VARCHAR(10) NOT NULL,
-                previous_open DECIMAL(10, 2) NOT NULL
+                previous_open DECIMAL(10, 2) NOT NULL,
                 current_price DECIMAL(10, 2) NOT NULL,
                 ai_suggestion VARCHAR(10) NOT NULL,
                 ai_prediction VARCHAR(10) NOT NULL,
