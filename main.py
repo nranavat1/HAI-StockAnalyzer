@@ -15,11 +15,11 @@ from database import init_db, get_db
 # Lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("🚀 Starting up...")
+    print("Starting up...")
     init_db()
-    print("✅ Database initialized")
+    print("Database initialized")
     yield
-    print("👋 Shutting down...")
+    print("Shutting down...")
 
 app = FastAPI(title="Stock Analyzer", lifespan=lifespan)
 
