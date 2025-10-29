@@ -36,7 +36,7 @@ templates = Jinja2Templates(directory="templates")
 # Load stocks
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-STOCK_DATA_DIR = os.path.join(DATA_DIR, "stock-market-data", "stocks")
+STOCK_DATA_DIR = os.path.join(DATA_DIR, "stock_market_data", "stocks")
 
 # Load main CSV once at startup
 STOCKS_CSV_PATH = os.path.join(DATA_DIR, "study_trials_with_ai.csv")
