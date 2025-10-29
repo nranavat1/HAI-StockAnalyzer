@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Analyzer - Stock {{ stock_number }} of 10</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Progress Header -->
+        <div class="progress-header">
+            <h1>📈 Stock Analysis</h1>
+            <p class="progress">Stock {{ stock_number }} of 10</p>
+        </div>
+
+        <!-- Stock Information -->
+        <div class="stock-header">
+            <h2>{{ stock_data.ticker }}</h2>
+            <p class="price">Current Price: ${{ "%.2f"|format(stock_data.current_price) }}</p>
+        </div>
+
+        <!-- Stock Data Table -->
+        <div class="box">
+            <h3>📊 Historical Data (Last 10 Days)</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Day</th>
+                            <th>Open</th>
+                            <th>High</th>
+                            <th>Low</th>
+                            <th>Close</th>
+                            <th>Volume</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in range(stock_data.open|length) %}
+                        <tr>
+                            <td>{{ i + 1 }}</td>
+                            <td>${{ "%.2f"|format(stock_data.open[i]) }}</td>
+                            <td>${{ "%.2f"|format(stock_data.high[i]) }}</td>
+                            <td>${{ "%.2f"|format(stock_data.low[i]) }}</td>
+                            <td>${{ "%.2f"|format(stock_data.close[i]) }}</td>
+                            <td>{{ "{:,}".format(stock_data.volume[i]|int) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- AI Suggestion Box -->
+        <div class="box ai-box">
+            <h3>🤖 AI Suggestion</h3>
+            <div class="suggestion-content">
+                <div class="suggestion-badge {{ stock_data.ai_suggestion|lower }}">
+                    {{ stock_data.ai_suggestion }}
+                </div>
+                <div class="prediction-info">
+                    <p><strong>AI Predicted Next Open:</strong> ${{ "%.2f"|format(stock_data.ai_prediction) }}</p>
+                    <p><strong>Previous Open:</strong> ${{ "%.2f"|format(stock_data.previous_open) }}</p>
+                    <p><strong>Current Price:</strong> ${{ "%.2f"|format(stock_data.current_price) }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Decision Form -->
+        <div class="decision-section">
+            <h3>What would you do?</h3>
+            <form method="POST" action="/decision" id="decisionForm">
+                <!-- Hidden fields to pass data -->
+                <input type="hidden" name="stock_number" value="{{ stock_number }}">
+                <input type="hidden" name="ticker" value="{{ stock_data.ticker }}">
+                <input type="hidden" name="previous_open" value="{{ stock_data.previous_open }}">
+                <input type="hidden" name="current_price" value="{{ stock_data.current_price }}">
+                <input type="hidden" name="ai_suggestion" value="{{ stock_data.ai_suggestion }}">
+                <input type="hidden" name="ai_prediction" value="{{ stock_data.ai_prediction }}">
+                
+                <!-- Decision Buttons -->
+                <div class="button-group">
+                    <button type="submit" name="user_decision" value="BUY" class="btn btn-buy">
+                        🟢 BUY
+                    </button>
+                    <button type="submit" name="user_decision" value="HOLD" class="btn btn-hold">
+                        🟡 HOLD
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Prevent double submission
+        const form = document.getElementById('decisionForm');
+        const buttons = form.querySelectorAll('button');
+        
+        form.addEventListener('submit', function() {
+            buttons.forEach(button => {
+                button.disabled = true;
+                button.style.opacity = '0.6';
+                button.style.cursor = 'not-allowed';
+            });
+        });
+    </script>
+</body>
+</html>
