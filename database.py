@@ -47,7 +47,7 @@ def init_db():
                 ai_suggestion VARCHAR(10) NOT NULL,
                 ai_prediction VARCHAR(10) NOT NULL,
                 user_decision VARCHAR(10) NOT NULL,
-                user_confidence INT(10),
+                user_confidence INTEGER CHECK (user_confidence >= 1 AND user_confidence <= 10),
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
