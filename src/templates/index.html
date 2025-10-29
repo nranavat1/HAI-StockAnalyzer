@@ -17,7 +17,7 @@
         <!-- Stock Information -->
         <div class="stock-header">
             <h2>{{ stock_data.ticker }}</h2>
-            <p class="price">Current Price: ${{ "%.2f"|format(stock_data.current_price) }}</p>
+            <!-- <p class="price">Current Price: ${{ "%.2f"|format(stock_data.current_price) }}</p> -->
         </div>
 
         <!-- Stock Data Table -->
@@ -60,8 +60,8 @@
                 </div>
                 <div class="prediction-info">
                     <p><strong>AI Predicted Next Open:</strong> ${{ "%.2f"|format(stock_data.ai_prediction) }}</p>
-                    <p><strong>Previous Open:</strong> ${{ "%.2f"|format(stock_data.previous_open) }}</p>
-                    <p><strong>Current Price:</strong> ${{ "%.2f"|format(stock_data.current_price) }}</p>
+                    <!-- <p><strong>Previous Open:</strong> ${{ "%.2f"|format(stock_data.previous_open) }}</p> -->
+                    <!-- <p><strong>Current Price:</strong> ${{ "%.2f"|format(stock_data.current_price) }}</p> -->
                 </div>
             </div>
         </div>
@@ -77,7 +77,10 @@
                 <input type="hidden" name="current_price" value="{{ stock_data.current_price }}">
                 <input type="hidden" name="ai_suggestion" value="{{ stock_data.ai_suggestion }}">
                 <input type="hidden" name="ai_prediction" value="{{ stock_data.ai_prediction }}">
-                
+                <p>Instructions: Based on the table of historical data of this stock and the AI suggestion, choose if you would like to buy more of this stock or hold your current possession of this stock, using the buttons below. You can also input a number between 1 and 10 of how confident you are in your selection, where 1 is you are not confident and 10 is you are super confident. Once you click a button you will be redirected to another page with a new stock.</p>
+                <p>Enter a integer from 1 to 10 on how confident you are with your decision to buy or hold this stock.</p>
+                <input type="text" id="user_confidence" name="user_confidence" placeholder="-1">
+
                 <!-- Decision Buttons -->
                 <div class="button-group">
                     <button type="submit" name="user_decision" value="BUY" class="btn btn-buy">
@@ -86,6 +89,8 @@
                     <button type="submit" name="user_decision" value="HOLD" class="btn btn-hold">
                         🟡 HOLD
                     </button>
+
+
                 </div>
             </form>
         </div>

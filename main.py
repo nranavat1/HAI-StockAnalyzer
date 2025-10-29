@@ -36,7 +36,7 @@ templates = Jinja2Templates(directory="templates")
 # Load stocks
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-STOCK_DATA_DIR = os.path.join(DATA_DIR, "stock-market-data/stocks")
+STOCK_DATA_DIR = os.path.join(DATA_DIR, "stock-market-data", "stocks")
 
 # Load main CSV once at startup
 STOCKS_CSV_PATH = os.path.join(DATA_DIR, "study_trials_with_ai.csv")
@@ -51,6 +51,7 @@ def get_stock_data():
         ticker = stock["Ticker"]
 
         stock_path = os.path.join(STOCK_DATA_DIR, f"{ticker}.csv")
+        print("stock_path: ", stock_path)
         history = pd.read_csv(stock_path)
         hist = history.head(10)
         
@@ -126,7 +127,8 @@ async def save_decision(
     current_price: float = Form(...),
     ai_suggestion: str = Form(...),
     ai_prediction: float = Form(...),
-    user_decision: str = Form(...)
+    user_decision: str = Form(...),
+    user_confidence: int=Form(...),
 ):
     """Save user decision and redirect to next stock"""
     # Get session ID
@@ -141,10 +143,10 @@ async def save_decision(
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO stock_decisions 
-                (session_id, ticker,previous_open,  current_price, ai_suggestion, ai_prediction, user_decision)
+                (session_id, ticker,previous_open,  current_price, ai_suggestion, ai_prediction, user_decision, user_confidence)
                 VALUES (%s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (session_id, ticker, previous_open, current_price, ai_suggestion, ai_prediction, user_decision))
+            """, (session_id, ticker, previous_open, current_price, ai_suggestion, ai_prediction, user_decision, user_confidence))
             
             decision_id = cursor.fetchone()['id']
             cursor.close()
