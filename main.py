@@ -36,6 +36,7 @@ templates = Jinja2Templates(directory="templates")
 # Load stocks
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
+STOCK_DATA_DIR = os.path.join(DATA_DIR, "stock-market-data/stocks")
 
 # Load main CSV once at startup
 STOCKS_CSV_PATH = os.path.join(DATA_DIR, "study_trials_with_ai.csv")
@@ -48,7 +49,9 @@ def get_stock_data():
         index = random.randrange(0, len(stocks))
         stock = stocks.iloc[index]
         ticker = stock["Ticker"]
-        history = pd.read_csv(f"../data/stock-market-data/stocks/{ticker}.csv")
+
+        stock_path = os.path.join(STOCK_DATA_DIR, f"{ticker}.csv")
+        history = pd.read_csv(stock_path)
         hist = history.head(10)
         
         return {
