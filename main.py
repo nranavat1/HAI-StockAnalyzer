@@ -34,7 +34,12 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Load stocks
-stocks = pd.read_csv("../data/study_trials_with_ai.csv")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+
+# Load main CSV once at startup
+STOCKS_CSV_PATH = os.path.join(DATA_DIR, "study_trials_with_ai.csv")
+stocks = pd.read_csv(STOCKS_CSV_PATH)
 
 
 def get_stock_data():
