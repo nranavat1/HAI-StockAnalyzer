@@ -1,24 +1,28 @@
 from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, RedirectResponse  # ← Add RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from contextlib import asynccontextmanager  # ← Add this
+from contextlib import asynccontextmanager
 import os
 import pandas as pd
 import random
 import secrets
-from starlette.middleware.sessions import SessionMiddleware  # ← Add this
-
 
 from database import init_db, get_db, migrate_db
+
+# Read condition from environment variable
+CONDITION = os.getenv("CONDITION", "with_ai")
+SHOW_AI = (CONDITION == "with_ai")
+
+print(f"Running in {CONDITION} mode (show_ai={SHOW_AI})")
 
 # Lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("Starting up...")
+    print("🚀 Starting up...")
     init_db()
     migrate_db()
-    print("Database initialized")
+    print(f"Database initialized in {CONDITION} mode")
     yield
     print("Shutting down...")
 
@@ -26,6 +30,7 @@ app = FastAPI(title="Stock Analyzer", lifespan=lifespan)
 
 # Middleware
 SECRET_KEY = os.getenv("SESSION_SECRET_KEY", secrets.token_urlsafe(32))
+from starlette.middleware.sessions import SessionMiddleware
 app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
 # Static files and templates
@@ -34,42 +39,62 @@ os.makedirs("templates", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Load stocks
+# Load stocks data
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-STOCK_DATA_DIR = os.path.join(DATA_DIR, "stock_market_data", "stocks")
+STOCK_DATA_DIR = os.path.join(DATA_DIR, "stocks")
 
 # Load main CSV once at startup
 STOCKS_CSV_PATH = os.path.join(DATA_DIR, "study_trials_with_ai.csv")
 stocks = pd.read_csv(STOCKS_CSV_PATH)
 
+print(f"Loaded {len(stocks)} stocks from CSV")
+
 
 def get_stock_data():
     """Get random stock data"""
     try:
+        # Pick random stock
         index = random.randrange(0, len(stocks))
         stock = stocks.iloc[index]
         ticker = stock["Ticker"]
 
+        # Load historical data
         stock_path = os.path.join(STOCK_DATA_DIR, f"{ticker}.csv")
-        print("stock_path: ", stock_path)
+        
+        if not os.path.exists(stock_path):
+            print(f"Stock file not found: {ticker}.csv, trying another...")
+            return get_stock_data()  # Recursively try another
+        
         history = pd.read_csv(stock_path)
         hist = history.head(10)
         
-        return {
+        # Build response based on condition
+        stock_data = {
             "ticker": ticker.upper(),
             "previous_open": stock["Previous_Open"],
             "current_price": stock["True_Next_Open"],
-            "open": hist['Open'].tolist(),  # Convert to list for template
+            "open": hist['Open'].tolist(),
             "high": hist['High'].tolist(),
             "low": hist['Low'].tolist(),
             "close": hist['Close'].tolist(),
             "volume": hist['Volume'].tolist(),
-            "ai_suggestion": stock["AI_Advice"],
-            "ai_prediction": stock["Predicted_Next_Open"]
         }
+        
+        # Add AI data only if in with_ai mode
+        if SHOW_AI:
+            stock_data["ai_suggestion"] = stock["AI_Advice"]
+            stock_data["ai_prediction"] = stock["Predicted_Next_Open"]
+        else:
+            stock_data["ai_suggestion"] = "N/A"
+            stock_data["ai_prediction"] = 0
+        
+        return stock_data
+        
     except Exception as e:
         print(f"Error fetching stock data: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 
@@ -78,6 +103,9 @@ async def home(request: Request):
     """Homepage - creates session and redirects"""
     if "session_id" not in request.session:
         request.session["session_id"] = secrets.token_urlsafe(16)
+        request.session["condition"] = CONDITION
+        request.session["show_ai"] = SHOW_AI
+        print(f"New session created: condition={CONDITION}")
     
     return RedirectResponse(url="/analyze/1", status_code=303)
 
@@ -85,22 +113,31 @@ async def home(request: Request):
 @app.get("/analyze/{num}")
 async def analyze(request: Request, num: int):
     """Show stock for analysis"""
-    # Get session ID
     session_id = request.session.get("session_id")
     
     if not session_id:
-        # No session - redirect to home to create one
         return RedirectResponse(url="/", status_code=303)
     
+    # Ensure condition is set
+    if "condition" not in request.session:
+        request.session["condition"] = CONDITION
+        request.session["show_ai"] = SHOW_AI
+    
+    show_ai = request.session.get("show_ai", SHOW_AI)
+    
     # Check how many decisions made
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute(
-            "SELECT COUNT(*) as count FROM stock_decisions WHERE session_id = %s",
-            (session_id,)
-        )
-        count = cursor.fetchone()["count"]
-        cursor.close()
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) as count FROM stock_decisions WHERE session_id = %s",
+                (session_id,)
+            )
+            count = cursor.fetchone()["count"]
+            cursor.close()
+    except Exception as e:
+        print(f"Database error: {e}")
+        count = 0
     
     # If already done 10, redirect to complete
     if count >= 10:
@@ -112,10 +149,11 @@ async def analyze(request: Request, num: int):
     if not stock_data:
         return HTMLResponse("Error loading stock data", status_code=500)
     
-    return templates.TemplateResponse("index.html", {
+    return templates.TemplateResponse("analyze.html", {
         "request": request,
         "stock_number": num,
         "stock_data": stock_data,
+        "show_ai": show_ai  # Pass to template
     })
 
 
@@ -124,33 +162,53 @@ async def save_decision(
     request: Request,
     stock_number: int = Form(...),
     ticker: str = Form(...),
-    previous_open: str=Form(...),
+    previous_open: str = Form(...),
     current_price: float = Form(...),
-    ai_suggestion: str = Form(...),
-    ai_prediction: float = Form(...),
+    ai_suggestion: str = Form("N/A"),
+    ai_prediction: float = Form(0.0),
     user_decision: str = Form(...),
-    user_confidence: int=Form(...),
+    user_confidence: int = Form(...)
 ):
     """Save user decision and redirect to next stock"""
-    # Get session ID
     session_id = request.session.get("session_id")
+    condition = request.session.get("condition", CONDITION)
     
     if not session_id:
         return RedirectResponse(url="/", status_code=303)
     
-    # Save to database
     try:
         with get_db() as conn:
             cursor = conn.cursor()
+            
+            # Check if completion code already exists for this session
+            cursor.execute("""
+                SELECT completion_code FROM stock_decisions 
+                WHERE session_id = %s AND completion_code IS NOT NULL 
+                LIMIT 1
+            """, (session_id,))
+            
+            existing = cursor.fetchone()
+            
+            if existing:
+                completion_code = existing['completion_code']
+            else:
+                # Generate new 5-digit completion code
+                completion_code = str(random.randrange(10000, 100000))
+            
+            # Insert decision
             cursor.execute("""
                 INSERT INTO stock_decisions 
-                (session_id, ticker,previous_open,  current_price, ai_suggestion, ai_prediction, user_decision, user_confidence)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                (session_id, condition, ticker, previous_open, current_price, 
+                 ai_suggestion, ai_prediction, user_decision, user_confidence, completion_code)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
-            """, (session_id, ticker, previous_open, current_price, ai_suggestion, ai_prediction, user_decision, user_confidence))
+            """, (session_id, condition, ticker, previous_open, current_price, 
+                  ai_suggestion, ai_prediction, user_decision, user_confidence, completion_code))
             
             decision_id = cursor.fetchone()['id']
             cursor.close()
+            
+            print(f"Saved decision {decision_id}: {ticker} - {user_decision} (condition: {condition})")
             
         # Redirect to next stock
         next_num = stock_number + 1
@@ -158,6 +216,8 @@ async def save_decision(
         
     except Exception as e:
         print(f"Error saving decision: {e}")
+        import traceback
+        traceback.print_exc()
         return HTMLResponse(f"Error saving decision: {e}", status_code=500)
 
 
@@ -169,32 +229,42 @@ async def complete(request: Request):
     if not session_id:
         return RedirectResponse(url="/", status_code=303)
     
-    # Generate completion code randomly
-    completion_code = str(random.randrange(10000,100000,1))
-
+    # Get completion code from database
     try:
         with get_db() as conn:
             cursor = conn.cursor()
+            cursor.execute("""
+                SELECT completion_code FROM stock_decisions 
+                WHERE session_id = %s AND completion_code IS NOT NULL 
+                LIMIT 1
+            """, (session_id,))
             
-            existing = cursor.fetchone()
-            if not existing:
-                # Update all decisions for this session with the completion code
-                    cursor.execute("""
-                        UPDATE stock_decisions 
-                        SET completion_code = %s 
-                        WHERE session_id = %s
-                    """, (completion_code, session_id))
-                    
-                    rows_updated = cursor.rowcount
-                    cursor.close()
-
-                    print(f"Saved completion code {completion_code} to {rows_updated} rows")
-            
+            result = cursor.fetchone()
             cursor.close()
+            
+            if result:
+                completion_code = result['completion_code']
+            else:
+                # Shouldn't happen, but fallback
+                completion_code = str(random.randrange(10000, 100000))
     except Exception as e:
-        print(f"Could not save completion code: {e}")
+        print(f"Error getting completion code: {e}")
+        completion_code = str(random.randrange(10000, 100000))
     
     return templates.TemplateResponse("complete.html", {
         "request": request,
         "completion_code": completion_code
     })
+
+
+# Optional: Debug endpoint
+@app.get("/debug/config")
+async def debug_config():
+    """Show current configuration"""
+    return {
+        "condition": CONDITION,
+        "show_ai": SHOW_AI,
+        "database_url_set": bool(os.getenv("DATABASE_URL")),
+        "session_secret_set": bool(os.getenv("SESSION_SECRET_KEY")),
+        "stocks_loaded": len(stocks)
+    }

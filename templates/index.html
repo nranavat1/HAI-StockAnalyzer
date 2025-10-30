@@ -10,14 +10,19 @@
     <div class="container">
         <!-- Progress Header -->
         <div class="progress-header">
-            <h1>Stock Analysis</h1>
+            <h1>📈 Stock Analysis</h1>
             <p class="progress">Stock {{ stock_number }} of 10</p>
-            <p><b>Instructions</b>: Based on the table of historical data of this stock and the AI suggestion, choose if you would like to buy more of this stock or hold your current possession of this stock, using the buttons below. You can also input a number between 1 and 10 of how confident you are in your selection, where 1 is you are not confident and 10 is you are super confident. Once you click a button you will be redirected to another page with a new stock.</p>
+        </div>
+
+        <!-- Stock Information -->
+        <div class="stock-header">
+            <h2>{{ stock_data.ticker }}</h2>
+            <p class="price">Current Price: ${{ "%.2f"|format(stock_data.current_price) }}</p>
         </div>
 
         <!-- Stock Data Table -->
         <div class="box">
-            <h3><b>Historical Data of {{ stock_data.ticker }} (Last 10 Days)</b></h3>
+            <h3>📊 Historical Data (Last 10 Days)</h3>
             <div class="table-container">
                 <table>
                     <thead>
@@ -46,68 +51,84 @@
             </div>
         </div>
 
-        <!-- AI Suggestion Box -->
+        <!-- AI Suggestion Box (Only if show_ai is True) -->
+        {% if show_ai %}
         <div class="box ai-box">
-            <h3><b>AI Suggestion</b></h3>
+            <h3>🤖 AI Suggestion</h3>
             <div class="suggestion-content">
                 <div class="suggestion-badge {{ stock_data.ai_suggestion|lower }}">
                     {{ stock_data.ai_suggestion }}
                 </div>
                 <div class="prediction-info">
                     <p><strong>AI Predicted Next Open:</strong> ${{ "%.2f"|format(stock_data.ai_prediction) }}</p>
-                    <!-- <p><strong>Previous Open:</strong> ${{ "%.2f"|format(stock_data.previous_open) }}</p> -->
-                    <!-- <p><strong>Current Price:</strong> ${{ "%.2f"|format(stock_data.current_price) }}</p> -->
+                    <p><strong>Previous Open:</strong> ${{ "%.2f"|format(stock_data.previous_open) }}</p>
+                    <p><strong>Current Price:</strong> ${{ "%.2f"|format(stock_data.current_price) }}</p>
                 </div>
             </div>
         </div>
+        {% endif %}
 
-        <!-- Decision Form -->
+        <!-- Decision Section -->
         <div class="decision-section">
             <h3>What would you do?</h3>
-            <form method="POST" action="/decision" id="decisionForm">
-                <!-- Hidden fields to pass data -->
-                <input type="hidden" name="stock_number" value="{{ stock_number }}">
-                <input type="hidden" name="ticker" value="{{ stock_data.ticker }}">
-                <input type="hidden" name="previous_open" value="{{ stock_data.previous_open }}">
-                <input type="hidden" name="current_price" value="{{ stock_data.current_price }}">
-                <input type="hidden" name="ai_suggestion" value="{{ stock_data.ai_suggestion }}">
-                <input type="hidden" name="ai_prediction" value="{{ stock_data.ai_prediction }}">
-
-                <!-- Confidence Rating -->
-                <div class="confidence-input">
-                    <label for="user_confidence">Confidence (1-10):</label>
-                    <p>Instructions: Enter a integer from 1 to 10 on how confident you are with your decision to buy or hold this stock.</p>
-                    <input type="number" id="user_confidence" name="user_confidence" 
-                        min="1" max="10" value="5" required>
-                </div>
-
-                <!-- Decision Buttons -->
-            <div class="button-group">
-                <p>               </p>
-                <button type="button" onclick="submitDecision('BUY')" class="btn btn-buy">BUY</button>
-                <button type="button" onclick="submitDecision('HOLD')" class="btn btn-hold">HOLD</button>
+            
+            <!-- Confidence Input -->
+            <div class="confidence-input">
+                <label for="user_confidence">Confidence (1-10):</label>
+                <p>Instructions: Enter an integer from 1 to 10 on how confident you are with your decision.</p>
+                <input type="number" id="user_confidence" name="user_confidence" 
+                       min="1" max="10" value="5" required>
             </div>
-            </form>
+
+            <!-- Decision Buttons -->
+            <div class="button-group">
+                <button onclick="submitDecision('BUY'); return false;" class="btn btn-buy" type="button">
+                    BUY
+                </button>
+                <button onclick="submitDecision('HOLD'); return false;" class="btn btn-hold" type="button">
+                    HOLD
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
         function submitDecision(decision) {
-            const formData = new FormData();
+            const confidence = document.getElementById('user_confidence').value;
             
-            // Add all fields
+            // Validate confidence
+            if (!confidence || confidence < 1 || confidence > 10) {
+                alert('Please enter a confidence value between 1 and 10');
+                return;
+            }
+            
+            // Create form data
+            const formData = new FormData();
             formData.append('stock_number', '{{ stock_number }}');
             formData.append('ticker', '{{ stock_data.ticker }}');
             formData.append('previous_open', '{{ stock_data.previous_open }}');
             formData.append('current_price', '{{ stock_data.current_price }}');
+            
+            {% if show_ai %}
+            // Include AI data if in with_ai condition
             formData.append('ai_suggestion', '{{ stock_data.ai_suggestion }}');
             formData.append('ai_prediction', '{{ stock_data.ai_prediction }}');
-            formData.append('user_decision', decision);
+            {% else %}
+            // Send N/A values if in without_ai condition
+            formData.append('ai_suggestion', 'N/A');
+            formData.append('ai_prediction', '0');
+            {% endif %}
             
-            const confidence = document.getElementById('user_confidence').value;
+            formData.append('user_decision', decision);
             formData.append('user_confidence', confidence);
             
-            console.log('Submitting:', Object.fromEntries(formData));
+            console.log('Submitting decision:', decision, 'with confidence:', confidence);
+            
+            // Disable buttons to prevent double submission
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+            });
             
             // Submit
             fetch('/decision', {
@@ -117,11 +138,24 @@
             .then(response => {
                 if (response.redirected) {
                     window.location.href = response.url;
+                } else {
+                    return response.json();
                 }
-                return response.json();
             })
-            .then(data => console.log('Response:', data))
-            .catch(error => console.error('Error:', error));
+            .then(data => {
+                if (data) {
+                    console.log('Response:', data);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error submitting decision');
+                // Re-enable buttons on error
+                document.querySelectorAll('.btn').forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                });
+            });
         }
     </script>
 </body>
