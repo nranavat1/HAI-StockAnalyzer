@@ -10,13 +10,13 @@
     <div class="container">
         <!-- Progress Header -->
         <div class="progress-header">
-            <h1>📈 Stock Analysis</h1>
+            <h1>Stock Analysis</h1>
             <p class="progress">Stock {{ stock_number }} of 10</p>
             <p><b>Instructions:</b> Below is a table showing the past 10 days of data for a particular stock. You may also see an AI suggestion below, which you can choose to consider or ignore. Please select whether you would like to <i>buy more</i> of the stock or <i>hold</i> your current shares. In addition, please enter a number in the text box to indicate how confident you feel about your choice, where 1 means you are not confident at all and 10 means you are very confident. Once you finish analyzing all 10 stocks, you will be shown a completion code. Please copy that code and paste it into the MTurk task. Thank you for your participation!</p>        </div>
 
         <!-- Stock Data Table -->
         <div class="box">
-            <h3>📊 Historical Data of {{ stock_data.ticker }} (Last 10 Days)</h3>
+            <h3>Historical Data of {{ stock_data.ticker }} (Last 10 Days)</h3>
             <div class="table-container">
                 <table>
                     <thead>
@@ -68,7 +68,7 @@
             <div class="confidence-input">
                 <label for="user_confidence">Confidence (1-10):</label>
                 <p>Instructions: Enter an integer from 1 to 10 on how confident you are with your decision.</p>
-                <input type="number" id="user_confidence" name="user_confidence" 
+                <input type="number" style="padding: 20px;" id="user_confidence" name="user_confidence" 
                        min="1" max="10" value="5" required>
             </div>
 
