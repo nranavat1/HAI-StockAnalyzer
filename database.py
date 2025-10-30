@@ -51,6 +51,10 @@ def init_db():
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        cursor.execute("""ALTER TABLE stock_decisions 
+            ADD COLUMN user_confidence INTEGER 
+            CHECK (user_confidence >= 1 AND user_confidence <= 10);""")
         
         # Create indexes
         cursor.execute("""

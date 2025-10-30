@@ -59,7 +59,7 @@ body {
 .box {
     background: white;
     padding: 25px;
-    border-radius: 12px;
+    border-radius: 16px;
     margin-bottom: 20px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
@@ -104,7 +104,7 @@ tbody tr:hover {
 
 /* AI Box */
 .ai-box {
-    background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+    background: white;
 }
 
 .suggestion-content {
