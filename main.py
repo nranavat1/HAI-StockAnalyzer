@@ -42,7 +42,7 @@ templates = Jinja2Templates(directory="templates")
 # Load stocks data
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-STOCK_DATA_DIR = os.path.join(DATA_DIR, "stocks")
+STOCK_DATA_DIR = os.path.join(DATA_DIR, "stock_market_data", "stocks")
 
 # Load main CSV once at startup
 STOCKS_CSV_PATH = os.path.join(DATA_DIR, "study_trials_with_ai.csv")
@@ -61,10 +61,6 @@ def get_stock_data():
 
         # Load historical data
         stock_path = os.path.join(STOCK_DATA_DIR, f"{ticker}.csv")
-        
-        if not os.path.exists(stock_path):
-            print(f"Stock file not found: {ticker}.csv, trying another...")
-            return get_stock_data()  # Recursively try another
         
         history = pd.read_csv(stock_path)
         hist = history.head(10)
