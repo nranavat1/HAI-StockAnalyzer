@@ -12,6 +12,7 @@
         <div class="progress-header">
             <h1>📈 Stock Analysis</h1>
             <p class="progress">Stock {{ stock_number }} of 10</p>
+            <p>Instructions: Based on the table of historical data of this stock and the AI suggestion, choose if you would like to buy more of this stock or hold your current possession of this stock, using the buttons below. You can also input a number between 1 and 10 of how confident you are in your selection, where 1 is you are not confident and 10 is you are super confident. Once you click a button you will be redirected to another page with a new stock.</p>
         </div>
 
         <!-- Stock Information -->
@@ -77,37 +78,60 @@
                 <input type="hidden" name="current_price" value="{{ stock_data.current_price }}">
                 <input type="hidden" name="ai_suggestion" value="{{ stock_data.ai_suggestion }}">
                 <input type="hidden" name="ai_prediction" value="{{ stock_data.ai_prediction }}">
-                <p>Instructions: Based on the table of historical data of this stock and the AI suggestion, choose if you would like to buy more of this stock or hold your current possession of this stock, using the buttons below. You can also input a number between 1 and 10 of how confident you are in your selection, where 1 is you are not confident and 10 is you are super confident. Once you click a button you will be redirected to another page with a new stock.</p>
-                <p>Enter a integer from 1 to 10 on how confident you are with your decision to buy or hold this stock.</p>
-                <input type="text" id="user_confidence" name="user_confidence" placeholder="-1">
+
+                <!-- Confidence Rating -->
+                <div class="confidence-input">
+                    <label for="user_confidence">Confidence (1-10):</label>
+                    <p>Instructions: Enter a integer from 1 to 10 on how confident you are with your decision to buy or hold this stock.</p>
+                    <input type="number" id="user_confidence" name="user_confidence" 
+                        min="1" max="10" value="5" required>
+                </div>
 
                 <!-- Decision Buttons -->
-                <div class="button-group">
-                    <button type="submit" name="user_decision" value="BUY" class="btn btn-buy">
-                        🟢 BUY
-                    </button>
-                    <button type="submit" name="user_decision" value="HOLD" class="btn btn-hold">
-                        🟡 HOLD
-                    </button>
-
-
-                </div>
+            <div class="button-group">
+                <button onclick="submitDecision('BUY')" class="btn btn-buy">
+                    BUY
+                </button>
+                <button onclick="submitDecision('HOLD')" class="btn btn-hold">
+                    HOLD
+                </button>
+            </div>
             </form>
         </div>
     </div>
 
     <script>
-        // Prevent double submission
-        const form = document.getElementById('decisionForm');
-        const buttons = form.querySelectorAll('button');
-        
-        form.addEventListener('submit', function() {
-            buttons.forEach(button => {
-                button.disabled = true;
-                button.style.opacity = '0.6';
-                button.style.cursor = 'not-allowed';
-            });
-        });
+        function submitDecision(decision) {
+            const formData = new FormData();
+            
+            // Add all fields
+            formData.append('stock_number', '{{ stock_number }}');
+            formData.append('ticker', '{{ stock_data.ticker }}');
+            formData.append('previous_open', '{{ stock_data.previous_open }}');
+            formData.append('current_price', '{{ stock_data.current_price }}');
+            formData.append('ai_suggestion', '{{ stock_data.ai_suggestion }}');
+            formData.append('ai_prediction', '{{ stock_data.ai_prediction }}');
+            formData.append('user_decision', decision);
+            
+            const confidence = document.getElementById('user_confidence').value;
+            formData.append('user_confidence', confidence);
+            
+            console.log('Submitting:', Object.fromEntries(formData));
+            
+            // Submit
+            fetch('/decision', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = response.url;
+                }
+                return response.json();
+            })
+            .then(data => console.log('Response:', data))
+            .catch(error => console.error('Error:', error));
+        }
     </script>
 </body>
 </html>
