@@ -170,7 +170,7 @@ async def complete(request: Request):
         return RedirectResponse(url="/", status_code=303)
     
     # Generate completion code randomly
-    completion_code = random.randrange(10000,100000,1)
+    completion_code = str(random.randrange(10000,100000,1))
 
     try:
         with get_db() as conn:
