@@ -7,3 +7,4 @@ yfinance==0.2.35
 python-dotenv==1.0.0
 pandas==2.1.4
 itsdangerous==2.1.2
+pydantic==2.5.0

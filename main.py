@@ -144,7 +144,7 @@ async def save_decision(
             cursor.execute("""
                 INSERT INTO stock_decisions 
                 (session_id, ticker,previous_open,  current_price, ai_suggestion, ai_prediction, user_decision, user_confidence)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             """, (session_id, ticker, previous_open, current_price, ai_suggestion, ai_prediction, user_decision, user_confidence))
             
