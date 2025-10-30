@@ -41,6 +41,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS stock_decisions (
                 id SERIAL PRIMARY KEY,
                 session_id VARCHAR(50) NOT NULL,
+                completion_code VARCHAR(50) NOT NULL,
                 ticker VARCHAR(10) NOT NULL,
                 previous_open DECIMAL(10, 2) NOT NULL,
                 current_price DECIMAL(10, 2) NOT NULL,
@@ -52,10 +53,6 @@ def init_db():
             )
         """)
 
-        cursor.execute("""ALTER TABLE stock_decisions 
-            ADD COLUMN user_confidence INTEGER 
-            CHECK (user_confidence >= 1 AND user_confidence <= 10);""")
-        
         # Create indexes
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_ticker 
@@ -69,4 +66,26 @@ def init_db():
         
         cursor.close()
         print("Database tables created/verified")
+
+
+def migrate_db():
+    """Add missing columns"""
+    with get_db() as conn:
+        cursor = conn.cursor()
+        
+        # Add user_confidence if missing
+        cursor.execute("""
+            ALTER TABLE stock_decisions 
+            ADD COLUMN IF NOT EXISTS user_confidence INTEGER 
+            CHECK (user_confidence >= 1 AND user_confidence <= 10)
+        """)
+        
+        # Add completion_code if missing
+        cursor.execute("""
+            ALTER TABLE stock_decisions 
+            ADD COLUMN IF NOT EXISTS completion_code VARCHAR(50)
+        """)
+        
+        cursor.close()
+        print("Database migration complete")
 

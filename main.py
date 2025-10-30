@@ -10,13 +10,14 @@ import secrets
 from starlette.middleware.sessions import SessionMiddleware  # ← Add this
 
 
-from database import init_db, get_db
+from database import init_db, get_db, migrate_db
 
 # Lifespan context manager
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Starting up...")
     init_db()
+    migrate_db()
     print("Database initialized")
     yield
     print("Shutting down...")
@@ -163,6 +164,37 @@ async def save_decision(
 @app.get("/complete")
 async def complete(request: Request):
     """Thank you page after 10 decisions"""
+    session_id = request.session.get("session_id")
+    
+    if not session_id:
+        return RedirectResponse(url="/", status_code=303)
+    
+    # Generate completion code randomly
+    completion_code = random.randrange(10000,100000,1)
+
+    try:
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            existing = cursor.fetchone()
+            if not existing:
+                # Update all decisions for this session with the completion code
+                    cursor.execute("""
+                        UPDATE stock_decisions 
+                        SET completion_code = %s 
+                        WHERE session_id = %s
+                    """, (completion_code, session_id))
+                    
+                    rows_updated = cursor.rowcount
+                    cursor.close()
+
+                    print(f"Saved completion code {completion_code} to {rows_updated} rows")
+            
+            cursor.close()
+    except Exception as e:
+        print(f"Could not save completion code: {e}")
+    
     return templates.TemplateResponse("complete.html", {
-        "request": request
+        "request": request,
+        "completion_code": completion_code
     })

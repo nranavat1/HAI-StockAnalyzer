@@ -14,10 +14,30 @@
                 You have completed all 10 stock analyses.
             </p>
             <p class="complete-message">
-                Your responses have been recorded. Thank you for participating in this study!
+                Your responses have been recorded.
             </p>
+            
+            <!-- Completion Code -->
+            <div class="completion-code-box">
+                <h2>Your Completion Code:</h2>
+                <div class="code">{{ completion_code }}</div>
+                <p class="code-instructions">
+                    Please copy this code and paste it into MTurk to receive payment.
+                </p>
+                <button onclick="copyCode()" class="copy-btn">📋 Copy Code</button>
+            </div>
+            
             <div class="checkmark">✓</div>
         </div>
     </div>
+
+    <script>
+        function copyCode() {
+            const code = "{{ completion_code }}";
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Completion code copied to clipboard!');
+            });
+        }
+    </script>
 </body>
 </html>
