@@ -41,6 +41,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS stock_decisions (
                 id SERIAL PRIMARY KEY,
                 session_id VARCHAR(50) NOT NULL,
+                condition VARCHAR(50) NOT NULL,
                 completion_code VARCHAR(50) NOT NULL,
                 ticker VARCHAR(10) NOT NULL,
                 previous_open DECIMAL(10, 2) NOT NULL,
@@ -84,6 +85,12 @@ def migrate_db():
         cursor.execute("""
             ALTER TABLE stock_decisions 
             ADD COLUMN IF NOT EXISTS completion_code VARCHAR(50)
+        """)
+
+        #add condition
+        cursor.execute("""
+            ALTER TABLE stock_decisions 
+            ADD COLUMN IF NOT EXISTS condition VARCHAR(50)
         """)
         
         cursor.close()
