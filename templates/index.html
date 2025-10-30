@@ -14,15 +14,9 @@
             <p class="progress">Stock {{ stock_number }} of 10</p>
         </div>
 
-        <!-- Stock Information -->
-        <div class="stock-header">
-            <h2>{{ stock_data.ticker }}</h2>
-            <p class="price">Current Price: ${{ "%.2f"|format(stock_data.current_price) }}</p>
-        </div>
-
         <!-- Stock Data Table -->
         <div class="box">
-            <h3>📊 Historical Data (Last 10 Days)</h3>
+            <h3>📊 Historical Data of {{ stock_data.ticker }} (Last 10 Days)</h3>
             <div class="table-container">
                 <table>
                     <thead>
